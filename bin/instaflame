@@ -1,0 +1,23 @@
+#!/bin/bash
+
+dur=30
+
+while getopts "p:d:" opt; do
+    case "$opt" in
+    p)
+        pid=$OPTARG
+        ;;
+    d)
+        dur=$OPTARG
+        ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+
+basedir=`dirname $0`
+
+
+perf record -p $pid -F 99 -g -- sleep $dur
+perf script | $basedir/../vendor/stackcollapse-perf.pl | $basedir/../vendor/flamegraph.pl

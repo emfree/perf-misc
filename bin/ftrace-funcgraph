@@ -1,0 +1,9 @@
+#!/bin/sh
+
+
+echo function_graph > /sys/kernel/debug/tracing/current_tracer
+echo funcgraph-proc > /sys/kernel/debug/tracing/trace_options
+echo funcgraph-abstime > /sys/kernel/debug/tracing/trace_options
+sleep $1
+cat /sys/kernel/debug/tracing/trace
+echo nop > /sys/kernel/debug/tracing/current_tracer
