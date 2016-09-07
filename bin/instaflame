@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 dur=30
 
@@ -18,6 +19,10 @@ shift $((OPTIND-1))
 
 basedir=`dirname $0`
 
+if [ -z ${pid+x} ]; then
+    perf record -a -g -F 99 -- sleep $dur
+else
+    perf record -p $pid -F 99 -g -- sleep $dur
+fi
 
-perf record -p $pid -F 99 -g -- sleep $dur
 perf script | $basedir/../vendor/stackcollapse-perf.pl | $basedir/../vendor/flamegraph.pl

@@ -1,9 +1,21 @@
 #!/bin/sh
 
+dur=1
+
+while getopts "d:" opt; do
+    case "$opt" in
+    d)
+        dur=$OPTARG
+        ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
 
 echo function_graph > /sys/kernel/debug/tracing/current_tracer
 echo funcgraph-proc > /sys/kernel/debug/tracing/trace_options
 echo funcgraph-abstime > /sys/kernel/debug/tracing/trace_options
-sleep $1
+sleep $dur
 cat /sys/kernel/debug/tracing/trace
 echo nop > /sys/kernel/debug/tracing/current_tracer
