@@ -1,0 +1,8 @@
+Usage
+-----
+
+Profile process $PID for 30 seconds:
+$ bin/instaflame -p $PID -d 30 > flamegraph.svg
+
+Use ftrace to generate a kernel function call chart
+$ sudo bin/ftrace-funcgraph -2 > callchart.txt
