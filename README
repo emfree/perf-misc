@@ -1,8 +1,20 @@
 Usage
 -----
 
-Profile process $PID for 30 seconds:
-$ bin/instaflame -p $PID -d 30 > flamegraph.svg
+1. CPU Profiling
 
-Use ftrace to generate a kernel function call chart
-$ sudo bin/ftrace-funcgraph -2 > callchart.txt
+You'll need Linux perf:
+$ sudo apt-get install -y linux-tools-common linux-tools-`uname -r`
+
+To profile process $PID for 30 seconds and generate a flamegraph:
+$ bin/profile -p $PID -d 30 > flamegraph.svg
+
+This just wraps perf and https://github.com/brendangregg/FlameGraph.
+
+
+2. Kernel function tracing
+
+Use ftrace to generate a kernel function call chart:
+$ sudo bin/ftrace-funcgraph -d 2 > callchart.txt
+
+Careful, this can have high overhead.
