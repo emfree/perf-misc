@@ -1,0 +1,35 @@
+#!/bin/bash
+
+perf probe --add mark_page_accessed
+perf probe --add mark_buffer_dirty
+perf probe --add add_to_page_cache_lru
+perf probe --add account_page_dirtied
+
+perf record -aR -e probe:mark_page_accessed,probe:mark_buffer_dirty,probe:add_to_page_cache_lru,probe:account_page_dirtied -- sleep 1
+
+perf script | awk '
+{
+    counts[$5]++
+}
+
+END {
+    mpa=counts["probe:mark_page_accessed:"]
+    mbd=counts["probe:mark_buffer_dirty:"]
+
+    apcl=counts["probe:add_to_page_cache_lru:"]
+    apd=counts["probe:account_page_dirtied:"]
+
+    total=mpa-mpd
+    misses=apcl-apd
+    if (misses < 0) { misses=0 }
+    hits=total-misses
+    ratio=hits/total * 100
+
+    printf "%8s %8s %8s %8s\n", "HITS", "MISSES", "DIRTIES", "RATIO"
+    printf "%8d %8d %8d %7.1f%%", hits, misses, mbd, ratio
+}'
+
+perf probe --del probe:mark_page_accessed
+perf probe --del probe:mark_buffer_dirty
+perf probe --del probe:add_to_page_cache_lru
+perf probe --del probe:account_page_dirtied
