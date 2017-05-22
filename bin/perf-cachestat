@@ -1,35 +1,34 @@
 #!/bin/bash
 
-perf probe --add mark_page_accessed
-perf probe --add mark_buffer_dirty
-perf probe --add add_to_page_cache_lru
-perf probe --add account_page_dirtied
+trap 'quit=1' INT QUIT TERM PIPE HUP
 
-perf record -aR -e probe:mark_page_accessed,probe:mark_buffer_dirty,probe:add_to_page_cache_lru,probe:account_page_dirtied -- sleep 1
+perf probe --add mpa=mark_page_accessed
+perf probe --add mbd=mark_buffer_dirty
+perf probe --add apcl=add_to_page_cache_lru
+perf probe --add apd=account_page_dirtied
 
-perf script | awk '
-{
-    counts[$5]++
-}
+while (( !quit )); do
 
-END {
-    mpa=counts["probe:mark_page_accessed:"]
-    mbd=counts["probe:mark_buffer_dirty:"]
+    perf stat -a -e probe:mpa,probe:mbd,probe:apcl,probe:apd -- sleep 1 2>&1 | sed 's/,//g' | awk '
+    {
+        printf $2 " " $1 "\n"
+        counts[$2] = $1
+    }
 
-    apcl=counts["probe:add_to_page_cache_lru:"]
-    apd=counts["probe:account_page_dirtied:"]
+    END {
+        total = counts["probe:mpa"] - counts["probe:mbd"]
+        misses = counts["probe:apcl"] - counts["probe:apd"]
+        printf "TOTAL " total "\n"
+        hits=total-misses
+        ratio=hits/total * 100
 
-    total=mpa-mpd
-    misses=apcl-apd
-    if (misses < 0) { misses=0 }
-    hits=total-misses
-    ratio=hits/total * 100
+        printf "%8s %8s %8s %8s\n", "HITS", "MISSES", "DIRTIES", "RATIO"
+        printf "%8d %8d %8d %7.1f%%\n", hits, misses, mbd, ratio
+    }'
+    sleep 1
+done
 
-    printf "%8s %8s %8s %8s\n", "HITS", "MISSES", "DIRTIES", "RATIO"
-    printf "%8d %8d %8d %7.1f%%", hits, misses, mbd, ratio
-}'
-
-perf probe --del probe:mark_page_accessed
-perf probe --del probe:mark_buffer_dirty
-perf probe --del probe:add_to_page_cache_lru
-perf probe --del probe:account_page_dirtied
+perf probe --del probe:mpa
+perf probe --del probe:mbd
+perf probe --del probe:apcl
+perf probe --del probe:apd
